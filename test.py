@@ -108,7 +108,6 @@ try:
             history.append(response.candidates[0].content)
 
             for function_call in response.function_calls:
-                function_call = response.candidates[0].content.parts[0].function_call
                 print(f"Function to call: {function_call.name}")
                 print(f"ID: {function_call.id}")
                 print(f"Arguments: {function_call.args}")
