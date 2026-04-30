@@ -85,61 +85,59 @@ def write_file_impl(file_path: str, content: str) -> dict:
 
 # Configure the client and tools
 client = genai.Client(api_key=gemini_api_key)
-tools = types.Tool(function_declarations=[list_files_and_directories, read_file, write_file])
+# tools = types.Tool(function_declarations=[list_files_and_directories, read_file, write_file])
+tools = types.Tool(function_declarations=[])
 config = types.GenerateContentConfig(tools=[tools])
-history: types.ContentListUnionDict = []
+histories: dict[int, types.ContentListUnionDict] = dict()
 
-def foo(brightness: int, color_temp: str) -> dict[str, str | int]:
-    return {"brightness": brightness, "colorTemperature": color_temp}
 
-try:
-    while True:
-        s = input("> ")
-        content = types.Content(role="user", parts=[types.Part(text=s)])
-        history.append(content)
+def chat(user_id: int, s: str):
+    if not user_id in histories:
+        histories[user_id] = []
+
+    history = histories[user_id]
+    content = types.Content(role="user", parts=[types.Part(text=s)])
+    history.append(content)
+
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=history,
+        config=config
+    )
+
+    while response.function_calls:
+        history.append(response.candidates[0].content)
+
+        for function_call in response.function_calls:
+            print(f"Function to call: {function_call.name}")
+            print(f"ID: {function_call.id}")
+            print(f"Arguments: {function_call.args}")
+
+            result = None
+            match function_call.name:
+                case "list_files_and_directories":
+                    result = list_files_and_directories_impl(**function_call.args)
+                case "read_file":
+                    result = read_file_impl(**function_call.args)
+                case "write_file":
+                    result = write_file_impl(**function_call.args)
+                case _:
+                    result = None
+
+            print(f"Result: {result}")
+
+            function_response_part = types.Part.from_function_response(
+                name=function_call.name,
+                response={"result": result},
+            )
+
+            history.append(types.Content(role="user", parts=[function_response_part]))
 
         response = client.models.generate_content(
             model="gemini-3-flash-preview",
+            config=config,
             contents=history,
-            config=config
         )
 
-        while response.function_calls:
-            history.append(response.candidates[0].content)
-
-            for function_call in response.function_calls:
-                print(f"Function to call: {function_call.name}")
-                print(f"ID: {function_call.id}")
-                print(f"Arguments: {function_call.args}")
-
-                result = None
-
-                match function_call.name:
-                    case "list_files_and_directories":
-                        result = list_files_and_directories_impl(**function_call.args)
-                    case "read_file":
-                        result = read_file_impl(**function_call.args)
-                    case "write_file":
-                        result = write_file_impl(**function_call.args)
-                    case _:
-                        result = None
-                print(f"Result: {result}")
-
-                function_response_part = types.Part.from_function_response(
-                    name=function_call.name,
-                    response={"result": result},
-                )
-
-                history.append(types.Content(role="user", parts=[function_response_part]))
-
-            response = client.models.generate_content(
-                model="gemini-3-flash-preview",
-                config=config,
-                contents=history,
-            )
-
-        print(response.text)
-        history.append(types.Content(role="model", parts=[types.Part(text=response.text)]))
-
-except KeyboardInterrupt:
-    print("\nGoodbyy...")
+    history.append(types.Content(role="model", parts=[types.Part(text=response.text)]))
+    return response.text
