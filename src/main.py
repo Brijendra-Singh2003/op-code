@@ -1,13 +1,13 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
 
-from fastapi import FastAPI, Body, Header
+from dotenv import load_dotenv
+from fastapi import Body, FastAPI, Header
+
+import model
+import t_service
 from schemas import Update
 
-import t_service
-import model
+load_dotenv()
 
 
 SECRET_TOKEN = os.getenv("SECRET_TOKEN")
@@ -16,10 +16,9 @@ app = FastAPI()
 
 @app.post("/t")
 async def hola(
-    body: Update = Body(...),
-    x_telegram_bot_api_secret_token: str | None = Header(None)
+    body: Update = Body(...), x_telegram_bot_api_secret_token: str | None = Header(None)
 ):
-    if x_telegram_bot_api_secret_token != SECRET_TOKEN:
+    if x_telegram_bot_api_secret_token != SECRET_TOKEN or body.message is None:
         return {"ok": False}
 
     print(f"> {body.message.text}")
@@ -35,7 +34,6 @@ async def hola(
     except Exception as e:
         print(f"Error: {e}")
         return {"ok": True}
-
 
 
 @app.get("/")

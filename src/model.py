@@ -1,9 +1,10 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
+
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+load_dotenv()
 
 cwd = os.getcwd()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -57,21 +58,24 @@ write_file = {
 }
 
 
-def list_files_and_directories_impl(directory_path: str = ".") -> list:
+def list_files_and_directories_impl(directory_path: str = ".") -> list | dict:
     """reads and returns all the folders and files present in a given folder."""
     import os
+
     try:
         return os.listdir(directory_path)
     except Exception as e:
         return {"error": str(e)}
 
-def read_file_impl(file_path: str) -> str:
+
+def read_file_impl(file_path: str) -> str | dict:
     """reads and returns the content of a file."""
     try:
         with open(file_path, "r") as f:
             return f.read()
     except Exception as e:
         return {"error": str(e)}
+
 
 def write_file_impl(file_path: str, content: str) -> dict:
     """writes the content of a file."""
@@ -88,11 +92,11 @@ client = genai.Client(api_key=gemini_api_key)
 # tools = types.Tool(function_declarations=[list_files_and_directories, read_file, write_file])
 tools = types.Tool(function_declarations=[])
 config = types.GenerateContentConfig(tools=[tools])
-histories: dict[int, types.ContentListUnionDict] = dict()
+histories: dict[int, list[types.Content]] = dict()
 
 
 def chat(user_id: int, s: str):
-    if not user_id in histories:
+    if user_id not in histories:
         histories[user_id] = []
 
     history = histories[user_id]
@@ -100,9 +104,7 @@ def chat(user_id: int, s: str):
     history.append(content)
 
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=history,
-        config=config
+        model="gemini-3-flash-preview", contents=history, config=config
     )
 
     while response.function_calls:
@@ -113,21 +115,22 @@ def chat(user_id: int, s: str):
             print(f"ID: {function_call.id}")
             print(f"Arguments: {function_call.args}")
 
+            args = function_call.args or {}
             result = None
             match function_call.name:
                 case "list_files_and_directories":
-                    result = list_files_and_directories_impl(**function_call.args)
+                    result = list_files_and_directories_impl(**args)
                 case "read_file":
-                    result = read_file_impl(**function_call.args)
+                    result = read_file_impl(**args)
                 case "write_file":
-                    result = write_file_impl(**function_call.args)
+                    result = write_file_impl(**args)
                 case _:
                     result = None
 
             print(f"Result: {result}")
 
             function_response_part = types.Part.from_function_response(
-                name=function_call.name,
+                name=function_call.name or "",
                 response={"result": result},
             )
 
