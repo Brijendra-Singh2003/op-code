@@ -1,5 +1,3 @@
-import math
-
 from google.genai import types
 
 read_file = types.FunctionDeclaration(
@@ -20,7 +18,7 @@ read_file = types.FunctionDeclaration(
             ),
             "limit": types.Schema(
                 type=types.Type.INTEGER,
-                description="Number of lines to read. Reade till EOF if not provided.",
+                description="Number of lines to read. Reads till EOF if no value provided.",
             ),
         },
         required=["file_path"],
