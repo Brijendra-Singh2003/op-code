@@ -27,7 +27,8 @@ create_n_write_file = types.FunctionDeclaration(
         required=["file_name"],
     ),
     response=types.Schema(
-        type=types.Type.ARRAY, description="path of the file created."
+        type=types.Type.STRING,
+        description="path of the file created.",
     ),
 )
 

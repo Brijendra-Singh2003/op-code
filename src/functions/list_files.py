@@ -17,14 +17,11 @@ list_files_and_directories = types.FunctionDeclaration(
         },
         required=[],
     ),
-    response=types.Schema(
-        type=types.Type.ARRAY, description="list of files and directories."
-    ),
 )
 
 
-def list_files_and_directories_impl(directory_path: str = ".") -> list | dict:
+def list_files_and_directories_impl(directory_path: str = ".") -> list | str:
     try:
         return os.listdir(directory_path)
     except Exception as e:
-        return {"error": str(e)}
+        return f"error: {str(e)}"

@@ -23,9 +23,10 @@ tools = types.Tool(
     ]
 )
 config = types.GenerateContentConfig(tools=[tools])
+history: list[types.Content] = []
 
-
-def chat(s: str, history: list[types.Content]):
+while True:
+    s = input("> ")
     content = types.Content(role="user", parts=[types.Part(text=s)])
     history.append(content)
 
@@ -71,4 +72,4 @@ def chat(s: str, history: list[types.Content]):
         )
 
     history.append(types.Content(role="model", parts=[types.Part(text=response.text)]))
-    return response.text
+    print(response.text)
