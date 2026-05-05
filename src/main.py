@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import Body, FastAPI, Header
+from google.genai import types
 
 import model
 import t_service
@@ -9,9 +10,10 @@ from schemas import Update
 
 load_dotenv()
 
-
 SECRET_TOKEN = os.getenv("SECRET_TOKEN")
 app = FastAPI()
+
+histories: dict[int, list[types.Content]] = dict()
 
 
 @app.post("/t")
@@ -21,12 +23,16 @@ async def hola(
     if x_telegram_bot_api_secret_token != SECRET_TOKEN or body.message is None:
         return {"ok": False}
 
-    print(f"> {body.message.text}")
-    print(f"> {body.message.from_user.first_name}")
-    print(f"> {body.message.from_user.id}")
+    sender = body.message.from_user
+    print(f">{sender.first_name}: {body.message.text}")
+
+    if sender.id not in histories:
+        histories[sender.id] = []
+
+    history = histories[sender.id]
 
     try:
-        response = model.chat(body.message.from_user.id, body.message.text)
+        response = model.chat(body.message.text, history)
         print(response)
 
         t_service.send_message(chat_id=body.message.from_user.id, text=response)
