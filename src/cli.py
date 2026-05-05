@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from functions import create_file, list_files, read_file, write_file
+from functions import create_file, list_files, patch_file, read_file
 
 load_dotenv()
 
@@ -19,7 +19,7 @@ tools = types.Tool(
         list_files.list_files_and_directories,
         create_file.create_n_write_file,
         read_file.read_file,
-        write_file.apply_patch,
+        patch_file.apply_patch,
     ]
 )
 config = types.GenerateContentConfig(tools=[tools])
@@ -49,8 +49,8 @@ while True:
                     result = list_files.list_files_and_directories_impl(**args)
                 case read_file.read_file.name:
                     result = read_file.read_file_impl(**args)
-                case write_file.apply_patch.name:
-                    result = write_file.apply_patch_impl(**args)
+                case patch_file.apply_patch.name:
+                    result = patch_file.apply_patch_impl(**args)
                 case create_file.create_n_write_file.name:
                     result = create_file.create_n_write_file_impl(**args)
                 case _:

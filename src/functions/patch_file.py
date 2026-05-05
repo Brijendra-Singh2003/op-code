@@ -40,7 +40,7 @@ def apply_patch_impl(file_path: str, patch: str) -> str:
         )
 
         if result.returncode != 0:
-            return f"error: {result.stderr}"
+            return f"error: {result.stderr or result.stdout}"
 
         return file_path
 
