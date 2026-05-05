@@ -1,3 +1,5 @@
+import math
+
 from google.genai import types
 
 read_file = types.FunctionDeclaration(
@@ -11,14 +13,14 @@ read_file = types.FunctionDeclaration(
                 description="Path of the file to read.",
                 example="src/main.py",
             ),
-            "start_line": types.Schema(
+            "offset": types.Schema(
                 type=types.Type.INTEGER,
-                description="Starting line number (1-based index)",
-                default=1,
+                description="Lines to skip from start.",
+                default=0,
             ),
-            "end_line": types.Schema(
+            "limit": types.Schema(
                 type=types.Type.INTEGER,
-                description="Ending line number (inclusive). defaults to last line.",
+                description="Number of lines to read. Reade till EOF if not provided.",
             ),
         },
         required=["file_path"],
@@ -31,7 +33,7 @@ read_file = types.FunctionDeclaration(
 
 
 def read_file_impl(
-    file_path: str, start_line: int | None = None, end_line: int | None = None
+    file_path: str, offset: int | None = None, limit: int | None = None
 ) -> str:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -40,13 +42,12 @@ def read_file_impl(
         total_lines = len(lines)
 
         # Default behavior: return full file
-        if start_line is None and end_line is None:
+        if offset is None and limit is None:
             numbered = [f"{i + 1}: {line}" for i, line in enumerate(lines)]
             return "".join(numbered)
 
-        # Normalize indices (convert to 0-based)
-        start = max((start_line - 1) if start_line else 0, 0)
-        end = end_line if end_line else total_lines
+        start = max(offset if offset else 0, 0)
+        end = start + limit if limit else total_lines
 
         # Clamp to file bounds
         start = min(start, total_lines)
