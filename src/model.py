@@ -25,7 +25,9 @@ def chat(s: str, history: list[types.Content]):
     )
 
     while response.function_calls:
-        history.append(response.candidates[0].content)
+        candidate = response.candidates[0] if response.candidates else None
+        if candidate and candidate.content:
+            history.append(candidate.content)
 
         for function_call in response.function_calls:
             print(f"Function to call: {function_call.name}")
