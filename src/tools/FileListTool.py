@@ -1,27 +1,28 @@
 import os
 
-from google.genai import types
+from .result import err, ok
 
-list_files_and_directories = types.FunctionDeclaration(
-    name="list_files_and_directories",
-    description="reads and returns a list of all the folders and files present in a given folder.",
-    parameters=types.Schema(
-        type=types.Type.OBJECT,
-        properties={
-            "directory_path": types.Schema(
-                type=types.Type.STRING,
-                description="optional parameter to specify path of the directory you want to get the files & nested directories of.",
-                example="src/common",
-                default=".",
-            )
+file_list_tool = {
+    "type": "function",
+    "function": {
+        "name": "file_list",
+        "description": "reads and returns a list of all the folders and files present in a given folder.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "directory_path": {
+                    "type": "string",
+                    "description": "path of the directory to list.",
+                }
+            },
+            "required": [],
         },
-        required=[],
-    ),
-)
+    },
+}
 
 
-def list_files_and_directories_impl(directory_path: str = ".") -> list | str:
+def file_list_impl(directory_path: str = ".") -> dict:
     try:
-        return os.listdir(directory_path)
+        return ok(os.listdir(directory_path)).to_dict()
     except Exception as e:
-        return f"error: {str(e)}"
+        return err(str(e)).to_dict()

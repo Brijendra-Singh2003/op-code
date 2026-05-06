@@ -1,48 +1,49 @@
+import os
 import subprocess
 import tempfile
 
-from google.genai import types
+from .result import err, ok
 
-apply_patch = types.FunctionDeclaration(
-    name="apply_patch",
-    description="Applies a git-style unified diff patch to a file.",
-    parameters=types.Schema(
-        type=types.Type.OBJECT,
-        properties={
-            "file_path": types.Schema(
-                type=types.Type.STRING,
-                description="Path of the file to read.",
-                example="src/main.py",
-            ),
-            "patch": types.Schema(
-                type=types.Type.STRING,
-            ),
+file_edit_tool = {
+    "type": "function",
+    "function": {
+        "name": "file_edit",
+        "description": "Applies a git-style unified diff patch to a file.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "Path of the file to patch.",
+                },
+                "patch": {
+                    "type": "string",
+                    "description": "The unified diff patch content.",
+                },
+            },
+            "required": ["file_path", "patch"],
         },
-        required=["file_path", "patch"],
-    ),
-    response=types.Schema(
-        type=types.Type.STRING,
-        description="path of the file edited.",
-    ),
-)
+    },
+}
 
 
-def apply_patch_impl(file_path: str, patch: str) -> str:
+def file_edit_impl(file_path: str, patch: str) -> dict:
+    print(f"\n[confirm] apply_patch(file_path={file_path!r})")
+    if input("Allow? [y/N] ").strip().lower() != "y":
+        return err("user denied permission").to_dict()
+    patch_file = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, mode="w") as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".patch") as f:
             f.write(patch)
             patch_file = f.name
-
         result = subprocess.run(
-            ["patch", file_path, patch_file],
-            capture_output=True,
-            text=True,
+            ["patch", file_path, patch_file], capture_output=True, text=True
         )
-
         if result.returncode != 0:
-            return f"error: {result.stderr or result.stdout}"
-
-        return file_path
-
+            return err(result.stderr or result.stdout).to_dict()
+        return ok(file_path).to_dict()
     except Exception as e:
-        return f"error: {str(e)}"
+        return err(str(e)).to_dict()
+    finally:
+        if patch_file and os.path.exists(patch_file):
+            os.unlink(patch_file)
