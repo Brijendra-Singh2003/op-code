@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 from fastapi import Body, FastAPI, Header
 from google.genai import types
 
-import model
-import t_service
+from config.t_service import send_message
 from schemas import Update
 
 load_dotenv()
@@ -29,13 +28,11 @@ async def hola(
     if sender.id not in histories:
         histories[sender.id] = []
 
-    history = histories[sender.id]
-
     try:
-        response = model.chat(body.message.text, history)
+        response = "Hola"
         print(response)
 
-        t_service.send_message(chat_id=body.message.from_user.id, text=response)
+        send_message(chat_id=body.message.from_user.id, text=response)
         return {"ok": True}
     except Exception as e:
         print(f"Error: {e}")

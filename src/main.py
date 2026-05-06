@@ -5,15 +5,14 @@ import sys
 from typing import cast
 
 from dotenv import load_dotenv
-from litellm import acompletion
-from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
-from litellm.types.utils import ModelResponse
+from litellm import CustomStreamWrapper, acompletion
 
 from tools import BashTool, FileEditTool, FileListTool, FileReadTool, FileWriteTool
 
 load_dotenv()
 
 DEFAULT_MODEL = os.getenv("MODEL", "gemini/gemini-2.0-flash")
+model = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MODEL
 
 tools = [
     FileListTool.file_list_tool,
@@ -34,24 +33,26 @@ tool_impls = {
 history = []
 
 
-async def get_stream(model: str) -> CustomStreamWrapper:
-    response = await acompletion(
-        model=model, messages=history, tools=tools, stream=True
-    )
-    return cast(CustomStreamWrapper, response)
+async def get_stream() -> CustomStreamWrapper:
+    stream = await acompletion(model=model, messages=history, tools=tools, stream=True)
+
+    return cast(CustomStreamWrapper, stream)
 
 
 async def get_response(model: str) -> dict:
-    stream = await get_stream(model)
-    reply = ""
     tool_calls_map: dict[int, dict] = {}
-    chunk: ModelResponse | None = None
+    chunk = None
+    reply = ""
+
+    stream = await get_stream()
 
     async for chunk in stream:
         delta = chunk.choices[0].delta
+
         if delta.content:
             print(delta.content, end="", flush=True)
             reply += delta.content
+
         if delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -81,38 +82,45 @@ async def get_response(model: str) -> dict:
     return {"role": "assistant", "content": reply}
 
 
+def call_tool(name: str, str_args: str):
+    result = {"success": False, "error": "unknown tool"}
+    args = json.loads(str_args)
+
+    print(f"\nTool: {name}({args})")
+    if name in tool_impls:
+        result = tool_impls[name](**args)
+
+    print(f"Result: {result}")
+    return result
+
+
+async def handle_input(message: str):
+    history.append({"role": "user", "content": message})
+
+    while True:
+        res = await get_response(model)
+        history.append(res)
+
+        if "tool_calls" not in res:
+            break
+
+        for tc in res["tool_calls"]:
+            result = call_tool(tc["function"]["name"], tc["function"]["arguments"])
+            history.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": json.dumps(result),
+                }
+            )
+
+
 async def main():
-    model = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MODEL
     print(f"Using model: {model}")
 
     while True:
-        s = input("\n> ")
-        history.append({"role": "user", "content": s})
-
-        while True:
-            msg = await get_response(model)
-            history.append(msg)
-
-            if "tool_calls" not in msg:
-                break
-
-            for tc in msg["tool_calls"]:
-                name = tc["function"]["name"]
-                args = json.loads(tc["function"]["arguments"])
-                print(f"\nTool: {name}({args})")
-
-                result = {"success": False, "error": "unknown tool"}
-                if name in tool_impls:
-                    result = tool_impls[name](**args)
-                print(f"Result: {result}")
-
-                history.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": json.dumps(result),
-                    }
-                )
+        message = input("\n> ")
+        await handle_input(message)
 
 
 if __name__ == "__main__":
