@@ -1,5 +1,3 @@
-from .result import err, ok
-
 file_read_tool = {
     "type": "function",
     "function": {
@@ -14,7 +12,7 @@ file_read_tool = {
                 },
                 "offset": {
                     "type": "integer",
-                    "description": "Lines to skip from start.",
+                    "description": "Lines to skip from start. Defaults to 0",
                 },
                 "limit": {
                     "type": "integer",
@@ -37,12 +35,12 @@ def file_read_impl(
         total = len(lines)
         if offset is None and limit is None:
             numbered = [f"{i + 1}: {line}" for i, line in enumerate(lines)]
-            return ok("".join(numbered)).to_dict()
+            return {"success": True, "data": "".join(numbered)}
 
         start = min(max(offset or 0, 0), total)
         end = min(start + limit if limit else total, total)
         selected = lines[start:end]
         numbered = [f"{i + start + 1}: {line}" for i, line in enumerate(selected)]
-        return ok("".join(numbered)).to_dict()
+        return {"success": True, "data": "".join(numbered)}
     except Exception as e:
-        return err(str(e)).to_dict()
+        return {"success": False, "error": str(e)}

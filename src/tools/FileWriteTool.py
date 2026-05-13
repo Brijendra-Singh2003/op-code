@@ -1,7 +1,5 @@
 import os
 
-from .result import err, ok
-
 file_write_tool = {
     "type": "function",
     "function": {
@@ -20,7 +18,7 @@ file_write_tool = {
                     "description": "content to initialize file with",
                 },
             },
-            "required": ["file_name"],
+            "required": ["file_name", "folder_path", "content"],
         },
     },
 }
@@ -31,14 +29,14 @@ def file_write_impl(file_name: str, folder_path: str = ".", content: str = "") -
         f"\n[confirm] create_n_write_file(file_name={file_name!r}, folder_path={folder_path!r})"
     )
     if input("Allow? [y/N] ").strip().lower() != "y":
-        return err("user denied permission").to_dict()
+        return {"success": False, "error": "user denied permission"}
     try:
         os.makedirs(folder_path, exist_ok=True)
         file_path = os.path.join(folder_path, file_name)
         if os.path.exists(file_path):
-            return err(f"file already exists: {file_path}").to_dict()
+            return {"success": False, "error": f"file already exists: {file_path}"}
         with open(file_path, "w") as f:
             f.write(content)
-        return ok(file_path).to_dict()
+        return {"success": True, "data": file_path}
     except Exception as e:
-        return err(str(e)).to_dict()
+        return {"success": False, "error": str(e)}

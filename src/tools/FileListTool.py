@@ -1,7 +1,5 @@
 import os
 
-from .result import err, ok
-
 file_list_tool = {
     "type": "function",
     "function": {
@@ -15,7 +13,7 @@ file_list_tool = {
                     "description": "path of the directory to list.",
                 }
             },
-            "required": [],
+            "required": ["directory_path"],
         },
     },
 }
@@ -23,6 +21,6 @@ file_list_tool = {
 
 def file_list_impl(directory_path: str = ".") -> dict:
     try:
-        return ok(os.listdir(directory_path)).to_dict()
+        return {"success": True, "data": os.listdir(directory_path)}
     except Exception as e:
-        return err(str(e)).to_dict()
+        return {"success": False, "error": str(e)}

@@ -1,126 +1,89 @@
 import asyncio
 import json
 import os
-import sys
-from typing import cast
 
-from dotenv import load_dotenv
-from litellm import CustomStreamWrapper, acompletion
+from config import model
+from src.utils import make_message
+from tools.index import call_tool
 
-from tools import BashTool, FileEditTool, FileListTool, FileReadTool, FileWriteTool
+prompt = f"""
+## Role
+You are a helpful and expert autonomous agent capable of interacting with the local system and external APIs using the tools provided.
 
-load_dotenv()
+# Context
+- You are inside a terminal session.
+- Your current working directory is {os.getcwd()}.
 
-DEFAULT_MODEL = os.getenv("MODEL", "gemini/gemini-2.0-flash")
-model = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MODEL
+## Objective
+Communicate with the user and solve their request efficiently and accurately.
 
-tools = [
-    FileListTool.file_list_tool,
-    FileWriteTool.file_write_tool,
-    FileReadTool.file_read_tool,
-    FileEditTool.file_edit_tool,
-    BashTool.bash_tool,
+## Constraints
+- If you lack sufficient information for a required argument, ask the user specifically for that information.
+- If a tool returns an error, analyze the error and attempt to fix your approach rather than repeating the same failed call.
+
+## Rules:
+- Be concise.
+- Respond normally in plain text.
+- Keep answers short and technical.
+- Always use relative path when accessing files.
+- Always Read files before editing them, they may have changed after last edit.
+- Keep changes minimal.
+"""
+
+messages: list[dict[str, str]] = [
+    {
+        "role": "system",
+        "content": prompt,
+    }
 ]
 
-tool_impls = {
-    "file_list": FileListTool.file_list_impl,
-    "file_read": FileReadTool.file_read_impl,
-    "file_edit": FileEditTool.file_edit_impl,
-    "file_write": FileWriteTool.file_write_impl,
-    "bash": BashTool.bash_impl,
-}
 
-history = []
-
-
-async def get_stream() -> CustomStreamWrapper:
-    stream = await acompletion(model=model, messages=history, tools=tools, stream=True)
-
-    return cast(CustomStreamWrapper, stream)
-
-
-async def get_response(model: str) -> dict:
-    tool_calls_map: dict[int, dict] = {}
-    chunk = None
-    reply = ""
-
-    stream = await get_stream()
-
-    async for chunk in stream:
-        delta = chunk.choices[0].delta
-
-        if delta.content:
-            print(delta.content, end="", flush=True)
-            reply += delta.content
-
-        if delta.tool_calls:
-            for tc in delta.tool_calls:
-                idx = tc.index
-                if idx not in tool_calls_map:
-                    tool_calls_map[idx] = {"id": tc.id, "name": "", "arguments": ""}
-                if tc.function.name:
-                    tool_calls_map[idx]["name"] += tc.function.name
-                if tc.function.arguments:
-                    tool_calls_map[idx]["arguments"] += tc.function.arguments
-
-    finish_reason = chunk.choices[0].finish_reason if chunk else "stop"
-
-    if finish_reason == "tool_calls":
-        return {
-            "role": "assistant",
-            "tool_calls": [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {"name": tc["name"], "arguments": tc["arguments"]},
-                }
-                for tc in tool_calls_map.values()
-            ],
-        }
-
-    print()
-    return {"role": "assistant", "content": reply}
-
-
-def call_tool(name: str, str_args: str):
-    result = {"success": False, "error": "unknown tool"}
-    args = json.loads(str_args)
-
-    print(f"\nTool: {name}({args})")
-    if name in tool_impls:
-        result = tool_impls[name](**args)
-
-    print(f"Result: {result}")
-    return result
-
-
-async def handle_input(message: str):
-    history.append({"role": "user", "content": message})
-
+async def agent_loop():
     while True:
-        res = await get_response(model)
-        history.append(res)
+        message = input("\n> ")
 
-        if "tool_calls" not in res:
+        if message == "/quit":
             break
 
-        for tc in res["tool_calls"]:
-            result = call_tool(tc["function"]["name"], tc["function"]["arguments"])
-            history.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": json.dumps(result),
-                }
-            )
+        messages.append(make_message("user", message))
+        reply, tool_calls = await model.send_messages(messages=messages)
+        messages.append(make_message("assistant", reply))
+
+        while tool_calls:
+            for tool_call in tool_calls:
+                id = tool_call.get("id", None)
+                func = tool_call.get("name", None)
+                args = tool_call.get("arguments", None)
+
+                if func is None and args is None:
+                    continue
+
+                if not isinstance(id, str):
+                    print(f"error: invalid function id: {id}")
+                    continue
+
+                if not isinstance(func, str):
+                    print(f"error: invalid function name {func}")
+                    continue
+
+                if not isinstance(args, str):
+                    print(f"error: invalid args name {args}")
+                    continue
+
+                result = call_tool(id, func, args)
+                print("result:", json.dumps(result["content"], indent=2), end="\n\n")
+                messages.append(result)
+
+            reply, tool_calls = await model.send_messages(messages=messages)
+            messages.append(make_message("assistant", reply))
 
 
 async def main():
-    print(f"Using model: {model}")
-
-    while True:
-        message = input("\n> ")
-        await handle_input(message)
+    print(f"Using model: {model.model_name}")
+    try:
+        await agent_loop()
+    except Exception as e:
+        print(f"error: {str(e)}")
 
 
 if __name__ == "__main__":

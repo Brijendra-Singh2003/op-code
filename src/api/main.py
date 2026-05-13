@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from fastapi import Body, FastAPI, Header
 from google.genai import types
 
+from api.schemas import Update
 from config.t_service import send_message
-from schemas import Update
 
 load_dotenv()
 
