@@ -16,7 +16,7 @@ file_edit_tool = {
                 },
                 "patch": {
                     "type": "string",
-                    "description": "The unified diff patch content.",
+                    "description": "The git style unified diff patch to apply.",
                 },
             },
             "required": ["file_path", "patch"],

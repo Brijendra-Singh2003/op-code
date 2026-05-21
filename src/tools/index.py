@@ -20,7 +20,7 @@ tool_impls = {
 
 
 def call_tool(id: str, name: str, str_args: str):
-    print(f"{name}({str_args})")
+    print(f"{id[:12]}: {name}({str_args})")
     args = json.loads(str_args)
 
     if name not in tool_impls:
@@ -31,6 +31,7 @@ def call_tool(id: str, name: str, str_args: str):
         }
 
     val = tool_impls[name](**args)
+    print("result:", json.dumps(val, indent=2), end="\n\n")
 
     return {
         "role": "tool",

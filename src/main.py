@@ -55,23 +55,19 @@ async def agent_loop():
                 func = tool_call.get("name", None)
                 args = tool_call.get("arguments", None)
 
-                if func is None and args is None:
-                    continue
-
                 if not isinstance(id, str):
                     print(f"error: invalid function id: {id}")
                     continue
 
                 if not isinstance(func, str):
-                    print(f"error: invalid function name {func}")
+                    print(f"error: invalid function name: {func}")
                     continue
 
                 if not isinstance(args, str):
-                    print(f"error: invalid args name {args}")
+                    print(f"error: invalid args name: {args}")
                     continue
 
                 result = call_tool(id, func, args)
-                print("result:", json.dumps(result["content"], indent=2), end="\n\n")
                 messages.append(result)
 
             reply, tool_calls = await model.send_messages(messages=messages)
