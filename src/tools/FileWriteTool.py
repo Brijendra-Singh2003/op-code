@@ -1,36 +1,44 @@
 import os
 
-file_write_tool = {
-    "type": "function",
-    "function": {
-        "name": "file_write",
-        "description": "creates a file at a given location and returns its path.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "Relative path to the file, e.g. './README.md' or 'src/utils.py'",
-                },
-                "content": {
-                    "type": "string",
-                    "description": "content to initialize file with",
-                },
-            },
-            "required": ["file_path", "content"],
-        },
-    },
-}
+from langchain_core.tools import tool
 
 
-def file_write_impl(file_path: str, content: str = "") -> dict:
+@tool
+def file_write(file_path: str, content: str = "") -> dict:
+    """
+    Create a file at the specified path and write content to it.
+
+    Args:
+        file_path: Relative or absolute path to the file, e.g. './README.md' or 'src/utils.py'.
+        content: Content to write to the file.
+
+    Returns:
+        A dictionary containing the operation result.
+    """
     print(f"\n[confirm] file_write(file_path={file_path!r})")
+
     if input("Allow? [y/N] ").strip().lower() != "y":
-        return {"success": False, "error": "user denied permission"}
+        return {
+            "success": False,
+            "error": "user denied permission",
+        }
+
     try:
-        os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
-        with open(file_path, "w") as f:
+        os.makedirs(
+            os.path.dirname(file_path) or ".",
+            exist_ok=True,
+        )
+
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
-        return {"success": True, "data": file_path}
+
+        return {
+            "success": True,
+            "data": file_path,
+        }
+
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {
+            "success": False,
+            "error": str(e),
+        }

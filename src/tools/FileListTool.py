@@ -1,26 +1,26 @@
 import os
 
-file_list_tool = {
-    "type": "function",
-    "function": {
-        "name": "file_list",
-        "description": "reads and returns a list of all the folders and files present in a given folder.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "directory_path": {
-                    "type": "string",
-                    "description": "path of the directory to list.",
-                }
-            },
-            "required": ["directory_path"],
-        },
-    },
-}
+from langchain_core.tools import tool
 
 
-def file_list_impl(directory_path: str = ".") -> dict:
+@tool
+def file_list(directory_path: str) -> dict:
+    """
+    Read and return a list of all folders and files present in a directory.
+
+    Args:
+        directory_path: Path of the directory to list.
+
+    Returns:
+        A dictionary containing the operation result.
+    """
     try:
-        return {"success": True, "data": os.listdir(directory_path)}
+        return {
+            "success": True,
+            "data": os.listdir(directory_path),
+        }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {
+            "success": False,
+            "error": str(e),
+        }
