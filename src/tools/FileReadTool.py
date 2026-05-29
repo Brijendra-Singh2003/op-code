@@ -18,6 +18,8 @@ def file_read(
     Returns:
         A dictionary containing the operation result.
     """
+    print(f"Reading file {file_path}")
+
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()

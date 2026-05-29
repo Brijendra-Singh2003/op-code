@@ -1,55 +1,170 @@
-import os
-import subprocess
-import tempfile
+from pathlib import Path
+from typing import Literal
+from difflib import unified_diff
 
 from langchain_core.tools import tool
 
 
 @tool
-def file_edit(file_path: str, patch: str) -> dict:
-    """Apply a git-style unified diff patch to a file.
+def file_edit(
+    file_path: str,
+    old_text: str,
+    new_text: str,
+    mode: Literal["first", "all"] = "first",
+    expected_occurrences: int | None = 1,
+) -> dict:
+    """
+    Replace text in a file with optional occurrence validation.
+
+    - The tool first validates how many times `old_text` appears in the file.
+    If `expected_occurrences` is provided and does not match the actual
+    number of occurrences, the edit is aborted.
+
+    - Before applying any changes, a unified diff preview is displayed and
+    the user must explicitly approve the edit.
 
     Args:
-        file_path: Path of the file to patch.
-        patch: Git-style unified diff patch to apply.
+        file_path:
+            Path to the file to modify.
+
+        old_text:
+            Exact text to search for.
+
+        new_text:
+            Replacement text.
+
+        mode:
+            Replacement mode.
+
+            - "first": Replace only the first occurrence.
+            - "all": Replace all occurrences.
+
+        expected_occurrences:
+            Expected number of occurrences of `old_text` in the file.
+
+            - If an integer is provided, the edit proceeds only if the
+              actual occurrence count matches exactly.
+            - If None, occurrence validation is disabled.
+
+            Defaults to 1 for safety.
 
     Returns:
-        Result dictionary containing success status and data/error."""
+        A dictionary with the following structure:
 
-    print(f"\n[confirm] apply_patch(file_path={file_path!r})")
+        Success:
+            {
+                "success": True,
+                "data": {
+                    "file_path": str,
+                    "replacements": int,
+                    "occurrences_found": int,
+                }
+            }
 
-    if input("Allow? [y/N] ").strip().lower() != "y":
-        return {
-            "success": False,
-            "error": "user denied permission",
-        }
+        Failure:
+            {
+                "success": False,
+                "error": str
+            }
 
-    patch_file = None
+    Examples:
+        Replace a single occurrence:
+
+            file_edit(
+                file_path="main.py",
+                old_text="DEBUG = True",
+                new_text="DEBUG = False",
+            )
+
+        Replace all occurrences after validating there are exactly 3:
+
+            file_edit(
+                file_path="config.py",
+                old_text="localhost",
+                new_text="db.internal",
+                mode="all",
+                expected_occurrences=3,
+            )
+
+        Replace all occurrences without validating the count:
+
+            file_edit(
+                file_path="config.py",
+                old_text="localhost",
+                new_text="db.internal",
+                mode="all",
+                expected_occurrences=None,
+            )
+    """
 
     try:
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            mode="w",
-            suffix=".patch",
-        ) as f:
-            f.write(patch)
-            patch_file = f.name
+        path = Path(file_path)
+        content = path.read_text()
 
-        result = subprocess.run(
-            ["patch", file_path, patch_file],
-            capture_output=True,
-            text=True,
-        )
+        actual_occurrences = content.count(old_text)
 
-        if result.returncode != 0:
+        if actual_occurrences == 0:
             return {
                 "success": False,
-                "error": result.stderr or result.stdout,
+                "error": "target text not found",
             }
+
+        if (
+            expected_occurrences is not None
+            and actual_occurrences != expected_occurrences
+        ):
+            return {
+                "success": False,
+                "error": (
+                    f"expected {expected_occurrences} occurrence(s) "
+                    f"but found {actual_occurrences}"
+                ),
+            }
+
+        if mode == "all":
+            updated = content.replace(old_text, new_text)
+            replacements = actual_occurrences
+        else:
+            updated = content.replace(old_text, new_text, 1)
+            replacements = 1
+
+        diff = "".join(
+            unified_diff(
+                content.splitlines(keepends=True),
+                updated.splitlines(keepends=True),
+                fromfile=f"{file_path} (before)",
+                tofile=f"{file_path} (after)",
+                lineterm="",
+                n=3,
+            )
+        )
+
+        print("\n=== Proposed Changes ===")
+        print(diff if diff else "(no changes)")
+        print("========================")
+
+        print(
+            f"\n[confirm] file_edit("
+            f"file_path={file_path!r}, "
+            f"mode={mode!r}, "
+            f"expected_occurrences={expected_occurrences})"
+        )
+
+        if input("Apply changes? [y/N] ").strip().lower() != "y":
+            return {
+                "success": False,
+                "error": "user denied permission",
+            }
+
+        path.write_text(updated)
 
         return {
             "success": True,
-            "data": file_path,
+            "data": {
+                "file_path": file_path,
+                "replacements": replacements,
+                "occurrences_found": actual_occurrences,
+            },
         }
 
     except Exception as e:
@@ -57,7 +172,3 @@ def file_edit(file_path: str, patch: str) -> dict:
             "success": False,
             "error": str(e),
         }
-
-    finally:
-        if patch_file and os.path.exists(patch_file):
-            os.unlink(patch_file)

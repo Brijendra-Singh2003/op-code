@@ -15,7 +15,7 @@ def file_write(file_path: str, content: str = "") -> dict:
     Returns:
         A dictionary containing the operation result.
     """
-    print(f"\n[confirm] file_write(file_path={file_path!r})")
+    print(f"Writing to file {file_path}\n\n{content}")
 
     if input("Allow? [y/N] ").strip().lower() != "y":
         return {

@@ -14,7 +14,7 @@ def bash_impl(command: str, timeout: int = 30) -> dict:
     Returns:
         Result dictionary containing success status and data/error."""
 
-    print(f"\n[confirm] bash({command!r})")
+    print(f"\nExecuting command: {command!r}")
 
     if input("Allow? [y/N] ").strip().lower() != "y":
         return {
