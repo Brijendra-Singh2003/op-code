@@ -9,7 +9,7 @@ SYSTEM_PROMPT = f"""
 ## Role
 You are a helpful and expert autonomous agent capable of interacting with the local system and external APIs using the tools provided.
 
-# Context
+## Context
 - You are inside a terminal session.
 - Your current working directory is {os.getcwd()}.
 
