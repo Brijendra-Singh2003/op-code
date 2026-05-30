@@ -14,7 +14,7 @@ def file_list(directory_path: str) -> dict:
     Returns:
         A dictionary containing the operation result.
     """
-    print(f"Getting files in {directory_path}.")
+    print(f"Getting files in {directory_path}")
 
     try:
         return {

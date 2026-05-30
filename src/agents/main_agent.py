@@ -31,5 +31,5 @@ Communicate with the user and solve their request efficiently and accurately.
 
 
 main_agent = create_agent(
-    model=model.qwen_model, tools=tools, system_prompt=SYSTEM_PROMPT
+    model=model.gemma_model, tools=tools, system_prompt=SYSTEM_PROMPT
 )
