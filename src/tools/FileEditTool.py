@@ -1,11 +1,62 @@
+from difflib import unified_diff
 from pathlib import Path
 from typing import Literal
-from difflib import unified_diff
 
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+description = """Replace text in a file with optional occurrence validation.
+
+- Try to keep `old_text` small, 2-3 lines from above and below may be enough.
+- The tool first validates how many times `old_text` appears in the file. If `expected_occurrences` is provided and does not match the actual number of occurrences, the edit is aborted.
+- Before applying any changes, a unified diff preview is displayed and the user must explicitly approve the edit.
+
+Examples:
+Replace a single occurrence:
+
+    file_edit(
+        file_path="main.py",
+        old_text="DEBUG = True",
+        new_text="DEBUG = False",
+    )
+
+Replace all occurrences after validating there are exactly 3:
+
+    file_edit(
+        file_path="config.py",
+        old_text="localhost",
+        new_text="db.internal",
+        mode="all",
+        expected_occurrences=3,
+    )
+
+Replace all occurrences without validating the count:
+
+    file_edit(
+        file_path="config.py",
+        old_text="localhost",
+        new_text="db.internal",
+        mode="all",
+        expected_occurrences=None,
+    )"""
 
 
-@tool
+class FileEditInput(BaseModel):
+    file_path: str = Field(description="Path to the file to modify.")
+    old_text: str = Field(description="Exact text to search for.")
+    new_text: str = Field(description="Replacement text.")
+    mode: Literal["first", "all"] = Field(
+        description='Replacement mode.\n- "first": Replace only the first occurrence.\n- "all": Replace all occurrences.'
+    )
+    expected_occurrences: int = Field(
+        description="""Expected number of occurrences of `old_text` in the file.
+- If an integer is provided, the edit proceeds only if the actual occurrence count matches exactly.
+- If None, occurrence validation is disabled.""",
+        default=1,
+    )
+
+
+@tool(description=description, args_schema=FileEditInput)
 def file_edit(
     file_path: str,
     old_text: str,
@@ -13,90 +64,6 @@ def file_edit(
     mode: Literal["first", "all"] = "first",
     expected_occurrences: int | None = 1,
 ) -> dict:
-    """
-    Replace text in a file with optional occurrence validation.
-
-    - The tool first validates how many times `old_text` appears in the file.
-    If `expected_occurrences` is provided and does not match the actual
-    number of occurrences, the edit is aborted.
-
-    - Before applying any changes, a unified diff preview is displayed and
-    the user must explicitly approve the edit.
-
-    Args:
-        file_path:
-            Path to the file to modify.
-
-        old_text:
-            Exact text to search for.
-
-        new_text:
-            Replacement text.
-
-        mode:
-            Replacement mode.
-
-            - "first": Replace only the first occurrence.
-            - "all": Replace all occurrences.
-
-        expected_occurrences:
-            Expected number of occurrences of `old_text` in the file.
-
-            - If an integer is provided, the edit proceeds only if the
-              actual occurrence count matches exactly.
-            - If None, occurrence validation is disabled.
-
-            Defaults to 1 for safety.
-
-    Returns:
-        A dictionary with the following structure:
-
-        Success:
-            {
-                "success": True,
-                "data": {
-                    "file_path": str,
-                    "replacements": int,
-                    "occurrences_found": int,
-                }
-            }
-
-        Failure:
-            {
-                "success": False,
-                "error": str
-            }
-
-    Examples:
-        Replace a single occurrence:
-
-            file_edit(
-                file_path="main.py",
-                old_text="DEBUG = True",
-                new_text="DEBUG = False",
-            )
-
-        Replace all occurrences after validating there are exactly 3:
-
-            file_edit(
-                file_path="config.py",
-                old_text="localhost",
-                new_text="db.internal",
-                mode="all",
-                expected_occurrences=3,
-            )
-
-        Replace all occurrences without validating the count:
-
-            file_edit(
-                file_path="config.py",
-                old_text="localhost",
-                new_text="db.internal",
-                mode="all",
-                expected_occurrences=None,
-            )
-    """
-
     try:
         path = Path(file_path)
         content = path.read_text()

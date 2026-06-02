@@ -3,19 +3,22 @@ from subprocess import TimeoutExpired, run
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-
 description = """Executes a given bash command and returns its output.
 
 Usage:
 - The command is executed using the system shell.
-- The user must explicitly approve execution.
+- User's approvel is asked before executing the command.
 - Output contains both stdout and stderr.
+- Do not use calls that may overflow the terminal (e.g. ls -R).
+- Always keep an upper limit in output if possible.
 - Commands exceeding the timeout will be terminated."""
 
 
 class BashInput(BaseModel):
     command: str = Field(description="The bash command to execute")
-    timeout: int = Field(description="Maximum time in seconds to wait for the command", default=30)
+    timeout: int = Field(
+        description="Maximum time in seconds to wait for the command", default=30
+    )
 
 
 @tool(description=description, args_schema=BashInput)
