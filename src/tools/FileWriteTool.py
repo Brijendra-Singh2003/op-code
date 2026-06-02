@@ -3,7 +3,6 @@ import os
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-
 description = """Writes content to a file on the local filesystem.
 
 Usage:

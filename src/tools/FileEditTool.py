@@ -46,7 +46,9 @@ class FileEditInput(BaseModel):
     old_text: str = Field(description="Exact text to search for.")
     new_text: str = Field(description="Replacement text.")
     mode: Literal["first", "all"] = Field(
-        description='Replacement mode.\n- "first": Replace only the first occurrence.\n- "all": Replace all occurrences.'
+        description="""Replacement mode.
+- "first": Replace only the first occurrence.
+- "all": Replace all occurrences."""
     )
     expected_occurrences: int = Field(
         description="""Expected number of occurrences of `old_text` in the file.

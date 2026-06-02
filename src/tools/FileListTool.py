@@ -1,15 +1,17 @@
 import os
 
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+description = "Read and return a list of all folders and files present in a directory."
 
 
-@tool
+class FileListInput(BaseModel):
+    directory_path: str = Field(description="Absolute path of the directory to list.")
+
+
+@tool(description=description, args_schema=FileListInput)
 def file_list(directory_path: str) -> dict:
-    """Read and return a list of all folders and files present in a directory.
-
-    Args:
-        directory_path: Absolute path of the directory to list."""
-
     print(f"Getting files in {directory_path}")
     try:
         items = os.listdir(directory_path)
@@ -18,7 +20,7 @@ def file_list(directory_path: str) -> dict:
             full_path = os.path.join(directory_path, items[i])
 
             if os.path.isdir(full_path):
-                items[i] += '/'
+                items[i] += "/"
 
         return {
             "success": True,

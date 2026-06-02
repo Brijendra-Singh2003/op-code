@@ -1,4 +1,5 @@
 from langchain_core.messages import HumanMessage
+
 from agents.main_agent import main_agent
 
 
@@ -23,8 +24,8 @@ async def input_loop(state):
         if user_input == "/quit":
             return
 
-        state['messages'].append(HumanMessage(user_input))
-        stream = main_agent.stream_events(state, version='v3')
+        state["messages"].append(HumanMessage(user_input))
+        stream = main_agent.stream_events(state, version="v3")
 
         for message in stream.messages:
             for token in message.text:

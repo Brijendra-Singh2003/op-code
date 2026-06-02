@@ -1,11 +1,9 @@
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-from .BashTool import bash_tool
-
 
 MAX_LINES_TO_READ = 300
 
-description = f"""Reads a file from the local filesystem. You can access any file directly by using this tool.
+description = """Reads a file from the local filesystem. You can access any file directly by using this tool.
 Assume this tool is able to read all files on the machine. If the User provides a path to a file assume that path is valid. It is okay to read a file that does not exist; an error will be returned.
 
 Usage:
@@ -15,7 +13,9 @@ Usage:
 class FileReadInput(BaseModel):
     file_path: str = Field(description="Absolute path to the file to read")
     offset: int = Field(description="Line number to start reading from", default=0)
-    limit: int = Field(description="Maximum number of lines to read", default=MAX_LINES_TO_READ)
+    limit: int = Field(
+        description="Maximum number of lines to read", default=MAX_LINES_TO_READ
+    )
 
 
 @tool(description=description, args_schema=FileReadInput)
