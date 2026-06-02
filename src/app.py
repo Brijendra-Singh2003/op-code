@@ -17,23 +17,26 @@ def extract_visible_text(content):
     return ""
 
 
-async def input_loop(messages):
+async def input_loop(state):
     while True:
         user_input = input("\n > ")
         if user_input == "/quit":
             return
 
-        messages.append(HumanMessage(user_input))
-        response = await main_agent.ainvoke({"messages": messages})
-        messages = response["messages"]
+        state['messages'].append(HumanMessage(user_input))
+        stream = main_agent.stream_events(state, version='v3')
 
-        if content := extract_visible_text(messages[-1].content):
-            print("\n", content, "\n")
+        for message in stream.messages:
+            for token in message.text:
+                print(token, end="", flush=True)
+
+        print()
+        state = stream.output
 
 
 async def start_session(history=[]):
     try:
-        await input_loop(history)
+        await input_loop({"messages": history})
 
     except Exception as e:
         print(f"error: {str(e)}")

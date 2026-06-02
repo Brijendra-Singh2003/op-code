@@ -1,21 +1,29 @@
 import os
 
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
 
 
-@tool
-def file_write(file_path: str, content: str = "") -> dict:
-    """
-    Create a file at the specified path and write content to it.
+description = """Writes content to a file on the local filesystem.
 
-    Args:
-        file_path: Relative or absolute path to the file, e.g. './README.md' or 'src/utils.py'.
-        content: Content to write to the file.
+Usage:
+- Parent directories will be created automatically if they do not exist.
+- Existing files will be overwritten.
+- User approval is asked by the tool before writing."""
 
-    Returns:
-        A dictionary containing the operation result.
-    """
-    print(f"Writing to file {file_path}\n\n{content}")
+
+class FileWriteInput(BaseModel):
+    file_path: str = Field(description="Absolute path to the file to write")
+    content: str = Field(description="Content to write to the file")
+
+
+@tool(description=description, args_schema=FileWriteInput)
+def file_write(
+    file_path: str,
+    content: str = "",
+) -> dict:
+    print(f"Writing to file {file_path}\n")
+    print(content)
 
     if input("Allow? [y/N] ").strip().lower() != "y":
         return {
@@ -42,3 +50,6 @@ def file_write(file_path: str, content: str = "") -> dict:
             "success": False,
             "error": str(e),
         }
+
+
+__all__ = ["file_write"]
