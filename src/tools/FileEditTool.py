@@ -13,32 +13,29 @@ description = """Replace text in a file with optional occurrence validation.
 
 Examples:
 Replace a single occurrence:
-
-    file_edit(
-        file_path="main.py",
-        old_text="DEBUG = True",
-        new_text="DEBUG = False",
-    )
+    file_edit({
+        file_path: "main.py",
+        old_text: "DEBUG = True",
+        new_text: "DEBUG = False",
+    })
 
 Replace all occurrences after validating there are exactly 3:
-
-    file_edit(
-        file_path="config.py",
-        old_text="localhost",
-        new_text="db.internal",
-        mode="all",
-        expected_occurrences=3,
-    )
+    file_edit({
+        file_path: "config.py",
+        old_text: "localhost",
+        new_text: "db.internal",
+        mode: "all",
+        expected_occurrences: 3,
+    })
 
 Replace all occurrences without validating the count:
-
-    file_edit(
-        file_path="config.py",
-        old_text="localhost",
-        new_text="db.internal",
-        mode="all",
-        expected_occurrences=None,
-    )"""
+    file_edit({
+        file_path: "config.py",
+        old_text: "localhost",
+        new_text: "db.internal",
+        mode: "all",
+        expected_occurrences: -1,
+    })"""
 
 
 class FileEditInput(BaseModel):
@@ -52,8 +49,8 @@ class FileEditInput(BaseModel):
     )
     expected_occurrences: int = Field(
         description="""Expected number of occurrences of `old_text` in the file.
-- If an integer is provided, the edit proceeds only if the actual occurrence count matches exactly.
-- If None, occurrence validation is disabled.""",
+- Edit fails if `expected_occurrences` doesn't match actual occurrence count.
+- Pass -1 to disable occurrence validation.""",
         default=1,
     )
 
@@ -64,7 +61,7 @@ def file_edit(
     old_text: str,
     new_text: str,
     mode: Literal["first", "all"] = "first",
-    expected_occurrences: int | None = 1,
+    expected_occurrences: int = 1,
 ) -> dict:
     try:
         path = Path(file_path)
@@ -75,19 +72,13 @@ def file_edit(
         if actual_occurrences == 0:
             return {
                 "success": False,
-                "error": "target text not found",
+                "error": "no occurance of `old_text` found",
             }
 
-        if (
-            expected_occurrences is not None
-            and actual_occurrences != expected_occurrences
-        ):
+        if expected_occurrences >= 0 and actual_occurrences != expected_occurrences:
             return {
                 "success": False,
-                "error": (
-                    f"expected {expected_occurrences} occurrence(s) "
-                    f"but found {actual_occurrences}"
-                ),
+                "error": f"expected {expected_occurrences} occurrence(s), but found {actual_occurrences}",
             }
 
         if mode == "all":
@@ -108,7 +99,7 @@ def file_edit(
             )
         )
 
-        print("\n=== Proposed Changes ===")
+        print("\n=== Proposed Changes ===\n")
         print(diff if diff else "(no changes)")
         print("========================")
 

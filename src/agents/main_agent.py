@@ -1,6 +1,7 @@
 import os
 
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
 
 from config import model
 from tools import tools
@@ -21,7 +22,6 @@ Communicate with the user and solve their request efficiently and accurately.
 - If a tool returns an error, analyze the error and attempt to fix your approach rather than repeating the same failed call.
 
 ## Rules:
-- Be concise.
 - Keep answers short and technical.
 - Always Read files before editing them, they may have changed after last edit.
 - Keep changes minimal.
@@ -29,5 +29,8 @@ Communicate with the user and solve their request efficiently and accurately.
 
 
 main_agent = create_agent(
-    model=model.gemma_model, tools=tools, system_prompt=SYSTEM_PROMPT
+    model=model.gemma_model,
+    tools=tools,
+    checkpointer=InMemorySaver(),
+    system_prompt=SYSTEM_PROMPT,
 )

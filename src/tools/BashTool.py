@@ -9,7 +9,6 @@ Usage:
 - The command is executed using the system shell.
 - User's approvel is asked before executing the command.
 - Output contains both stdout and stderr.
-- Do not use calls that may overflow the terminal (e.g. ls -R).
 - Always keep an upper limit for output if possible.
 - If a commands takes longer than `timeout`, it will be terminated."""
 
