@@ -11,8 +11,14 @@ def run_agent(input, config):
     )
 
     for message in stream.messages:
+        print("\n[Thinking]")
+        for token in message.reasoning:
+            print(token, end="", flush=True)
+
+        print("\n\n[Response]")
         for token in message.text:
             print(token, end="", flush=True)
+
     print()
 
 
