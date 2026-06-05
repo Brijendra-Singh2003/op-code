@@ -11,7 +11,7 @@ SYSTEM_PROMPT = f"""
 You are a helpful and expert autonomous agent capable of interacting with the local system and external APIs using the tools provided.
 
 ## Context
-- You are inside a terminal session.
+- You are inside a {os.name} terminal session.
 - Your current working directory is {os.getcwd()}.
 
 ## Objective

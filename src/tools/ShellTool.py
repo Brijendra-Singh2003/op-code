@@ -1,9 +1,10 @@
+import platform
 from subprocess import TimeoutExpired, run
 
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-description = """Executes a given bash command and returns its output.
+description = f"""Executes a given command in {platform.system} system and returns its output.
 
 Usage:
 - The command is executed using the system shell.
@@ -21,7 +22,7 @@ class BashInput(BaseModel):
 
 
 @tool(description=description, args_schema=BashInput)
-def bash_tool(
+def shell_tool(
     command: str,
     timeout: int = 30,
 ) -> dict:
@@ -42,14 +43,10 @@ def bash_tool(
             timeout=timeout,
         )
 
-        output = result.stdout
-
-        if result.stderr:
-            output += f"\nstderr: {result.stderr}"
-
         return {
-            "success": True,
-            "data": output or "(no output)",
+            "success": result.returncode == 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
         }
 
     except TimeoutExpired:
@@ -65,4 +62,4 @@ def bash_tool(
         }
 
 
-__all__ = ["bash_tool"]
+__all__ = ["shell_tool"]
