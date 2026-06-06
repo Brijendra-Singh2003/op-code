@@ -5,6 +5,8 @@ from typing import Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
+from tools.utils import request_approval
+
 description = """Replace text in a file with optional occurrence validation.
 
 - Try to keep `old_text` small, 2-3 lines from above and below may be enough.
@@ -43,15 +45,12 @@ class FileEditInput(BaseModel):
     old_text: str = Field(description="Exact text to search for.")
     new_text: str = Field(description="Replacement text.")
     mode: Literal["first", "all"] = Field(
-        description="""Replacement mode.
-- "first": Replace only the first occurrence.
-- "all": Replace all occurrences."""
+        default="first",
+        description='Replacement mode.\n- "first": Replace only the first occurrence.\n- "all": Replace all occurrences.',
     )
     expected_occurrences: int = Field(
-        description="""Expected number of occurrences of `old_text` in the file.
-- Edit fails if `expected_occurrences` doesn't match actual occurrence count.
-- Pass -1 to disable occurrence validation.""",
         default=1,
+        description="Expected number of occurrences of `old_text` in the file.\n- Edit fails if `expected_occurrences` doesn't match actual occurrence count.\n- Pass -1 to disable occurrence validation.",
     )
 
 
@@ -100,18 +99,18 @@ def file_edit(
         print("\n=== Proposed Changes ===\n")
         for line in diff_lines:
             if line.startswith("+") and not line.startswith("+++"):
-                print(f"\033[32m{line}\033[0m", end='')
+                print(f"\033[32m{line}\033[0m", end="")
             elif line.startswith("-") and not line.startswith("---"):
-                print(f"\033[31m{line}\033[0m", end='')
+                print(f"\033[31m{line}\033[0m", end="")
             else:
-                print(line)
+                print(line, end="")
         print("========== END ===========")
 
-        print(f"\nEditing file {file_path}")
-        if input("Apply changes? [y/N] ").strip().lower() != "y":
+        rejection_message = request_approval(f"\nEditing file {file_path}")
+        if rejection_message:
             return {
                 "success": False,
-                "error": "user denied permission",
+                "error": f"user denied permission: {rejection_message}",
             }
 
         path.write_text(updated)

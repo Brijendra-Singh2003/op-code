@@ -29,9 +29,3 @@ qwen_model = _init_chat_model(
     model="qwen/qwen3-32b",
     model_provider="groq",
 )
-
-openrouter_model = _init_chat_model(
-    model="deepseek/deepseek-chat",
-    model_provider="openai",
-    openai_api_base="https://openrouter.ai/api/v1",
-)

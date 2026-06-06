@@ -4,6 +4,8 @@ from subprocess import TimeoutExpired, run
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
+from tools.utils import request_approval
+
 description = f"""Executes a given command in {platform.system} system and returns its output.
 
 Usage:
@@ -26,12 +28,12 @@ def shell_tool(
     command: str,
     timeout: int = 30,
 ) -> dict:
-    print(f"\nExecuting command: {command!r}")
 
-    if input("Allow? [y/N] ").strip().lower() != "y":
+    rejection_message = request_approval(f"\nExecuting command: {command!r}")
+    if rejection_message:
         return {
             "success": False,
-            "error": "user denied permission",
+            "error": f"user denied permission: {rejection_message}",
         }
 
     try:
@@ -60,6 +62,3 @@ def shell_tool(
             "success": False,
             "error": str(e),
         }
-
-
-__all__ = ["shell_tool"]

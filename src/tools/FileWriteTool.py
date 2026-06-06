@@ -3,6 +3,8 @@ import os
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
+from tools.utils import request_approval
+
 description = """Writes content to a file on the local filesystem.
 
 Usage:
@@ -21,13 +23,11 @@ def file_write(
     file_path: str,
     content: str = "",
 ) -> dict:
-    print(f"Writing to file {file_path}\n")
-    print(content)
-
-    if input("Allow? [y/N] ").strip().lower() != "y":
+    rejection_message = request_approval(f"Writing to file {file_path}\n")
+    if rejection_message:
         return {
             "success": False,
-            "error": "user denied permission",
+            "error": f"user denied permission: {rejection_message}",
         }
 
     try:
@@ -49,6 +49,3 @@ def file_write(
             "success": False,
             "error": str(e),
         }
-
-
-__all__ = ["file_write"]

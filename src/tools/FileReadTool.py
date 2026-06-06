@@ -50,6 +50,3 @@ def file_read(
             "success": False,
             "error": str(e),
         }
-
-
-__all__ = ["file_read"]
