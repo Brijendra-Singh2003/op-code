@@ -88,28 +88,26 @@ def file_edit(
             updated = content.replace(old_text, new_text, 1)
             replacements = 1
 
-        diff = "".join(
-            unified_diff(
-                content.splitlines(keepends=True),
-                updated.splitlines(keepends=True),
-                fromfile=f"{file_path} (before)",
-                tofile=f"{file_path} (after)",
-                lineterm="",
-                n=3,
-            )
+        diff_lines = unified_diff(
+            content.splitlines(keepends=True),
+            updated.splitlines(keepends=True),
+            fromfile=f"{file_path} (before)",
+            tofile=f"{file_path} (after)",
+            lineterm="",
+            n=3,
         )
 
         print("\n=== Proposed Changes ===\n")
-        print(diff if diff else "(no changes)")
-        print("========================")
+        for line in diff_lines:
+            if line.startswith("+") and not line.startswith("+++"):
+                print(f"\033[32m{line}\033[0m", end='')
+            elif line.startswith("-") and not line.startswith("---"):
+                print(f"\033[31m{line}\033[0m", end='')
+            else:
+                print(line)
+        print("========== END ===========")
 
-        print(
-            f"\n[confirm] file_edit("
-            f"file_path={file_path!r}, "
-            f"mode={mode!r}, "
-            f"expected_occurrences={expected_occurrences})"
-        )
-
+        print(f"\nEditing file {file_path}")
         if input("Apply changes? [y/N] ").strip().lower() != "y":
             return {
                 "success": False,

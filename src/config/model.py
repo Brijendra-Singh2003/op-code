@@ -1,6 +1,7 @@
 from dotenv import load_dotenv as _load_env
 from langchain.chat_models import init_chat_model as _init_chat_model
 
+
 _load_env()
 
 gemma_model = _init_chat_model(
@@ -27,4 +28,10 @@ mixtral_model = _init_chat_model(
 qwen_model = _init_chat_model(
     model="qwen/qwen3-32b",
     model_provider="groq",
+)
+
+openrouter_model = _init_chat_model(
+    model="deepseek/deepseek-chat",
+    model_provider="openai",
+    openai_api_base="https://openrouter.ai/api/v1",
 )
