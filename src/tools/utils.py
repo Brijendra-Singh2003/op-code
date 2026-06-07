@@ -1,6 +1,8 @@
+from lib.screenManager import console
+
 def request_approval(stmt: str) -> str | None:
-    print(stmt)
-    reply = input("\nAllow? [y/N]: ")
+    console.print(stmt)
+    reply = console.input("Allow? [y/N]: ")
 
     if reply.strip().lower() == "y":
         return None
