@@ -15,29 +15,29 @@ description = """Replace text in a file with optional occurrence validation.
 
 Examples:
 Replace a single occurrence:
-    file_edit({
-        file_path: "main.py",
-        old_text: "DEBUG = True",
-        new_text: "DEBUG = False",
-    })
+    file_edit(
+        file_path="main.py",
+        old_text="DEBUG = True",
+        new_text="DEBUG = False",
+    )
 
 Replace all occurrences after validating there are exactly 3:
-    file_edit({
-        file_path: "config.py",
-        old_text: "localhost",
-        new_text: "db.internal",
-        mode: "all",
-        expected_occurrences: 3,
-    })
+    file_edit(
+        file_path="config.py",
+        old_text="localhost",
+        new_text="db.internal",
+        mode="all",
+        expected_occurrences=3,
+    )
 
 Replace all occurrences without validating the count:
-    file_edit({
-        file_path: "config.py",
-        old_text: "localhost",
-        new_text: "db.internal",
-        mode: "all",
-        expected_occurrences: -1,
-    })"""
+    file_edit(
+        file_path="config.py",
+        old_text="localhost",
+        new_text="db.internal",
+        mode="all",
+        expected_occurrences=-1,
+    )"""
 
 
 class FileEditInput(BaseModel):

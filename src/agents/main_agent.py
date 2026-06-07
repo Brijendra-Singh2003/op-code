@@ -12,7 +12,7 @@ You are a helpful and expert autonomous agent capable of interacting with the lo
 
 ## Context
 - You are inside a {os.name} terminal session.
-- Your current working directory is {os.getcwd()}.
+- Your current working directory is '{os.getcwd()}'.
 
 ## Objective
 Communicate with the user and solve their request efficiently and accurately.
