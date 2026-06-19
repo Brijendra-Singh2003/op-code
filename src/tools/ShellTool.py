@@ -4,7 +4,7 @@ from subprocess import TimeoutExpired, run
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from tools.utils import request_approval
+from lib.utils import request_approval
 
 description = f"""Executes a given command in {platform.system} system and returns its output.
 
