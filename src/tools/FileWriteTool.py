@@ -23,7 +23,16 @@ def file_write(
     file_path: str,
     content: str = "",
 ) -> dict:
-    rejection_message = request_approval(f"Writing to file {file_path}\n")
+    lines = content.split("\n")
+    line_count = len(lines)
+    line_no_width = len(str(line_count))
+
+    for i in range(line_count):
+        line_no = str(i+1).rjust(line_no_width)
+        print("\033[30m", line_no, "\033[32m", lines[i])
+    print("\033[0m")
+
+    rejection_message = request_approval(f"Writing to file {file_path}/n")
     if rejection_message:
         return {
             "success": False,

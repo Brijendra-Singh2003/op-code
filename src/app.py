@@ -1,11 +1,10 @@
 import asyncio
 
 from langchain_core.messages import HumanMessage
-from rich.markdown import Markdown
-from rich.text import Text
-from lib.screenManager import screen, console
-
 from agents.main_agent import main_agent
+
+
+show_thinking = False
 
 
 async def run_agent(input, config):
@@ -16,32 +15,31 @@ async def run_agent(input, config):
     )
 
     async for message in stream.messages:
+        is_thinking = show_thinking
 
-        async def consume_reasoning():
-            reasoning_text = ""
+        async def consume_thinking():
+            nonlocal is_thinking
 
             async for token in message.reasoning:
-                reasoning_text += token
-                reasoning_text = "\n".join(reasoning_text.split("\n")[-5:])
+                if is_thinking:
+                    print(f"\033[30m{token}\033[0m", end="")
 
-                screen.update(Text(reasoning_text, style="dim"))
-
-            screen.clear()
-
-
-        async def consume_text():
-            answer_text = ""
+        async def consume_response():
+            nonlocal is_thinking
 
             async for token in message.text:
-                answer_text += token
-                screen.update(Markdown(answer_text))
+                if is_thinking:
+                    is_thinking = False
+                    print()
 
-            screen.save()
+                print(token, end='')
+            print()
+        
+        promises = [consume_response()]
+        if show_thinking:
+            promises.append(consume_thinking())
 
-
-        await asyncio.gather(consume_reasoning(), consume_text())
-
-    console.print()
+        asyncio.gather(*promises)
 
 
 async def start_session(thread_id="cli_session"):
