@@ -1,3 +1,4 @@
+from langchain_community.tools import DuckDuckGoSearchRun
 from tools import FileEditTool, FileListTool, FileReadTool, FileWriteTool, ShellTool
 
 tools = [
@@ -6,4 +7,5 @@ tools = [
     FileReadTool.file_read,
     FileEditTool.file_edit,
     ShellTool.shell_tool,
+    DuckDuckGoSearchRun(),
 ]

@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage
 from agents.main_agent import main_agent
 
 
-show_thinking = False
+show_thinking = True
 
 
 async def run_agent(input, config):
