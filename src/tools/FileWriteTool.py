@@ -33,11 +33,8 @@ def file_write(
     print("\033[0m")
 
     rejection_message = request_approval(f"Writing to file {file_path}/n")
-    if rejection_message:
-        return {
-            "success": False,
-            "error": f"user denied permission: {rejection_message}",
-        }
+    if rejection_message is not None:
+        return rejection_message
 
     try:
         os.makedirs(

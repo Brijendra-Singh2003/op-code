@@ -1,8 +1,8 @@
 import asyncio
 
 from langchain_core.messages import HumanMessage
-from agents.main_agent import main_agent
 
+from agents.main_agent import main_agent
 
 show_thinking = True
 
@@ -21,8 +21,9 @@ async def run_agent(input, config):
             nonlocal is_thinking
 
             async for token in message.reasoning:
-                if is_thinking:
-                    print(f"\033[30m{token}\033[0m", end="")
+                if not is_thinking:
+                    break
+                print(f"\033[2m{token}\033[0m", end="")
 
         async def consume_response():
             nonlocal is_thinking
@@ -32,9 +33,9 @@ async def run_agent(input, config):
                     is_thinking = False
                     print()
 
-                print(token, end='')
+                print(token, end="")
             print()
-        
+
         promises = [consume_response()]
         if show_thinking:
             promises.append(consume_thinking())
@@ -42,9 +43,20 @@ async def run_agent(input, config):
         asyncio.gather(*promises)
 
 
+def input_lines():
+    print("\n > ", end="")
+    text = input()
+
+    while text.endswith("\\"):
+        text = text.removesuffix("\\")
+        text += "\n" + input("   ")
+
+    return text
+
+
 async def start_session(thread_id="cli_session"):
     while True:
-        user_input = input("\n > ")
+        user_input = input_lines()
         if user_input == "/quit":
             return
 

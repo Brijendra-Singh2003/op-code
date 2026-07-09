@@ -30,11 +30,8 @@ def shell_tool(
 ) -> dict:
 
     rejection_message = request_approval(f"\nExecuting command: {command!r}")
-    if rejection_message:
-        return {
-            "success": False,
-            "error": f"user denied permission: {rejection_message}",
-        }
+    if rejection_message is not None:
+        return rejection_message
 
     try:
         result = run(

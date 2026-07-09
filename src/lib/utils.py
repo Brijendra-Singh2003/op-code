@@ -1,8 +1,16 @@
-def request_approval(stmt: str) -> str | None:
+def request_approval(stmt: str) -> dict | None:
     print(stmt)
-    reply = input("Allow? [y/N]: ")
+    reply = input("Allow? [y/N]: ").strip()
 
-    if reply.strip().lower() == "y":
+    if reply.lower() == "y":
         return None
 
-    return reply
+    response = {
+        "success": False,
+        "error": "user denied permission",
+    }
+
+    if reply and reply.lower() != "n":
+        response["user_message"] = reply
+
+    return response
